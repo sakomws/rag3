@@ -5,10 +5,24 @@ function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
 
-  const sendMessage = (event) => {
+  const sendMessage = async (event) => {
     event.preventDefault();
     if (input !== "") {
       setMessages([...messages, { text: input, user: "User" }]);
+
+      // send user prompt to gpt to classify whether or not it is real time or not real time
+      const response = await fetch("http://localhost:8000/chat/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: input,
+        }),
+      });
+
+      const data = await response.json();
+
       setInput("");
     }
   };
