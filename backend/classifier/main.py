@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import openai
 from dotenv import load_dotenv
+import yfinance as yf
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,11 +29,21 @@ async def classify_prompt(prompt: Prompt):
 
         classification = response.choices[0].message['content'].strip()
         # Assuming the response is already in the desired JSON format
+        print("here is response"+classification)
         return classification
     except openai.error.OpenAIError as e:
         raise HTTPException(status_code=500, detail=f"OpenAI API Error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error: {str(e)}")
+
+@app.get("/stock/{ticker}")
+async def get_stock_data(ticker: str):
+    try:
+        stock = yf.Ticker(ticker)
+        data = stock.history(period="1d")
+        return data.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching stock data: {str(e)}")
 
 if __name__ == '__main__':
     import uvicorn
