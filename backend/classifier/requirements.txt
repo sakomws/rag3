@@ -4,3 +4,4 @@ openai==0.28
 python-dotenv
 typing_extensions
 yfinance
+requests
