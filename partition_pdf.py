@@ -1,6 +1,7 @@
 import argparse
 from unstructured.partition.pdf import partition_pdf
 
+
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Partition a PDF using Unstructured.')
@@ -9,7 +10,7 @@ def main():
     args = parser.parse_args()
     
     # Partition the PDF document into elements
-    elements = partition_pdf(filename=args.filename)
+    elements = partition_pdf(filename=args.filename, strategy='hi_res')
     
     # Print out the elements to see the structure
     for element in elements:
