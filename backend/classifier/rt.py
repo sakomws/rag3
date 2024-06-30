@@ -34,7 +34,7 @@ def real_time_data_yahoo(query, stock_name="TSLA"):
        # files=[file_id]
     )
 
-    print(response.choices[0].message.content)
+    return (response.choices[0].message.content)
 
 
 def real_time_data_eodhd(query, stock_name="TSLA"):
@@ -64,4 +64,34 @@ def real_time_data_eodhd(query, stock_name="TSLA"):
        # files=[file_id]
     )
 
-    print(response.choices[0].message.content)
+    return (response.choices[0].message.content)
+
+def real_time_data_alphavantage(query, stock_name="TSLA"):
+    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={stock_name}&interval=5min&apikey=6DW7QIVX4XF6DL5T"
+    alphavantage_data = requests.get(url).json()
+
+    # with open('path_to_your_file.txt', 'r') as file:
+    #   file_content = file.read()
+
+
+    # Initialize OpenAI client
+    client = openai.OpenAI(api_key="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")
+
+    # with open('stock_data.csv', 'rb') as f:
+    #     response = openai.File.create(
+    #         purpose='answers',
+    #         file=f
+    #     )
+    # file_id = response['id']
+
+    response = client.chat.completions.create(
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": f"You are a helpful assistant here is the stock data: {alphavantage_data}, you should not include disclaimer, just the answer, even if you are not sure"},
+            {"role": "user", "content": query},
+        ],
+       # files=[file_id]
+    )
+
+    return (response.choices[0].message.content)
+
