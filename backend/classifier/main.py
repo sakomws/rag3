@@ -4,6 +4,19 @@ from pydantic import BaseModel
 import openai
 from dotenv import load_dotenv
 import yfinance as yf
+from langchain_astradb import AstraDBVectorStore
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+
+
+from langchain_openai import (
+    ChatOpenAI,
+    OpenAIEmbeddings,
+)
+
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -82,6 +95,33 @@ async def reply(prompt: Prompt):
             answer = answer_response.choices[0].message['content'].strip()
             real_time_answers.append({"prompt: ": question, "result: ": answer})
 
+        # Step 5: Answer the non-real time questions using the vectorDB 
+        non_real_time_answers = []
+        astra_db_store = AstraDBVectorStore(
+            collection_name="langchain_unstructured",
+            embedding=OpenAIEmbeddings(),
+            token=os.getenv("ASTRA_DB_APPLICATION_TOKEN"),
+            api_endpoint=os.getenv("ASTRA_DB_API_ENDPOINT")
+        )
+        #TODO: change model
+        llm = ChatOpenAI(model="gpt-3.5-turbo-16k", streaming=False, temperature=0)
+        for question in non_real_time_questions:
+            prompt = """
+            Answer the question based only on the supplied context. If you don't know the answer, say "I don't know".
+            Context: {context}
+            Question: {question}
+            Your answer:
+            """
+            chain = (
+                {"context": astra_db_store.as_retriever(), "question": RunnablePassthrough()}
+                | PromptTemplate.from_template(prompt)
+                | llm
+                | StrOutputParser()
+            )
+
+            answer = chain.invoke(f'{question}')
+            non_real_time_answers.append({"prompt: ": question, "result: ": answer})
+
         return {
             # "classification": {
             #     "real_time": real_time_questions,
@@ -89,7 +129,8 @@ async def reply(prompt: Prompt):
             #     "company_ticker": company_tickers
             # },
             # "stock_data": stock_data,
-            "real_time_answers": real_time_answers
+            "real_time_answers": real_time_answers,
+            "non_real_time_answers": non_real_time_answers
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error: {str(e)}")
